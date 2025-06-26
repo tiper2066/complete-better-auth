@@ -1,15 +1,21 @@
 'use server';
 import { auth } from '@/lib/auth';
 
-export const signIn = async () => {
-    // 로그인에 필요한 signIn 함수
-    await auth.api.signInEmail({
-        // auth.api 에서 제공하는 signInEmail 함수를 사용함
-        body: {
-            email: 'zozo@email.com', // 로그인 시 필요한  email 과 password 를 설정해 둔다.
-            password: 'zozo12345',
-        },
-    });
+// ****************************** email, password 전달
+export const signIn = async (email: string, password: string) => {
+    try {
+        // 로그인에 필요한 signIn 함수
+        await auth.api.signInEmail({
+            // auth.api 에서 제공하는 signInEmail 함수를 사용함
+            body: {
+                email: email, // ************ 전달된 email
+                password: password, // ************* 전달된 password
+            },
+        });
+        console.log('로그인 성공');
+    } catch (error) {
+        throw error;
+    }
 };
 
 export const signUp = async () => {
