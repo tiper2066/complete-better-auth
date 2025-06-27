@@ -1,20 +1,28 @@
 'use server';
 import { auth } from '@/lib/auth';
 
-// ****************************** email, password 전달
+//  email, password 전달
 export const signIn = async (email: string, password: string) => {
     try {
         // 로그인에 필요한 signIn 함수
         await auth.api.signInEmail({
             // auth.api 에서 제공하는 signInEmail 함수를 사용함
             body: {
-                email: email, // ************ 전달된 email
-                password: password, // ************* 전달된 password
+                email: email, //  전달된 email
+                password: password, //  전달된 password
             },
         });
-        console.log('로그인 성공');
+
+        return {
+            success: true,
+            message: 'Signed in successfully',
+        };
     } catch (error) {
-        throw error;
+        const e = error as Error;
+        return {
+            success: false,
+            message: e.message || 'An unknown error occurred',
+        };
     }
 };
 

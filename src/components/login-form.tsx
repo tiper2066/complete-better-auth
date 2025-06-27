@@ -1,5 +1,5 @@
 'use client';
-import { signIn, signUp } from '@/server/users'; // **************************************  서버 액션 signUp 제거하고 signIn으로 대체
+import { signIn, signUp } from '@/server/users'; //   서버 액션 signUp 제거하고 signIn으로 대체
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,11 +17,16 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-} from '@/components/ui/form'; // ************************************** shadcn Form 컴포넌트 가져오기
-import { zodResolver } from '@hookform/resolvers/zod'; // ********************* zod resolver
-import { useForm } from 'react-hook-form'; // ********************* react-hook-form
-import { z } from 'zod'; // ********************* zod 가져오기 (Zod : 스키마 선언 및 유효성 검사 라이브러리)
-// ****************************** form 유효성 검사 함수 선언
+} from '@/components/ui/form'; //  shadcn Form 컴포넌트 가져오기
+import { zodResolver } from '@hookform/resolvers/zod'; //  zod resolver
+import { useForm } from 'react-hook-form'; //  react-hook-form
+import { z } from 'zod'; //  zod 가져오기 (Zod : 스키마 선언 및 유효성 검사 라이브러리)
+import { toast } from 'sonner'; //  sonner 토스트 라이브러리
+import { useRouter } from 'next/navigation'; //  router 객체 가져옴
+import { useState } from 'react'; //  useState 추가
+import { Loader2 } from 'lucide-react';
+import { authClient } from '@/lib/auth-client'; // ***************************** authClient 객체 가져옴
+//  form 유효성 검사 함수 선언
 const formSchema = z.object({
     email: z.string().email(), // 이메일 유효성 검사
     password: z.string().min(8), // 비번 최소 8자
@@ -31,7 +36,10 @@ export function LoginForm({
     className,
     ...props
 }: React.ComponentProps<'div'>) {
-    // ************************************************** 1. Form 객체 선언
+    const [isLoading, setIsLoading] = useState(false); //  loading 여부 상태
+    const router = useRouter(); //  router 객체 생성
+
+    //  1. Form 객체 선언
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -40,77 +48,83 @@ export function LoginForm({
         },
     });
 
-    // 2. *************************************************** 2. Submit handler 선언
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        signIn(values.email, values.password);
+    // 3. ************************************** Google 로그인 함수 추가
+    const signInWithGoogle = async () => {
+        await authClient.signIn.social({
+            provider: 'google',
+            callbackURL: '/dashboard',
+        });
+    };
+
+    // 2.  Submit handler 선언 - toast 이용해서 수정
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        setIsLoading(true); //  loading 상태로 변경
+        const { success, message } = await signIn(
+            values.email,
+            values.password
+        );
+        // 로그인에 성공하면 성공 메시지 출력하고
+        if (success) {
+            toast.success(message as string);
+            router.push('/dashboard'); // dashboard 페이지로 이동
+        } else {
+            toast.error(message as string);
+        }
     }
 
     return (
         <div className={cn('flex flex-col gap-6', className)} {...props}>
             <Card>
-                <CardHeader className="text-center">
-                    <CardTitle className="text-xl">Welcome back</CardTitle>
+                <CardHeader className='text-center'>
+                    <CardTitle className='text-xl'>Welcome back</CardTitle>
                     <CardDescription>
-                        Login with your Apple or Google account
+                        Login with your Google account
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {/* ******************************** Shadcn Form 컴포넌트로 form 을 감쌈  */}
+                    {/*  Shadcn Form 컴포넌트로 form 을 감쌈  */}
                     <Form {...form}>
                         <form
                             onSubmit={form.handleSubmit(onSubmit)}
-                            className="space-y-8"
+                            className='space-y-8'
                         >
-                            <div className="grid gap-6">
-                                <div className="flex flex-col gap-4">
+                            <div className='grid gap-6'>
+                                <div className='flex flex-col gap-4'>
                                     <Button
-                                        variant="outline"
-                                        className="w-full"
+                                        variant='outline'
+                                        className='w-full'
+                                        type='button' // *************************** type 추가
+                                        onClick={signInWithGoogle} // *************************** google 로그인 클릭핸들러 추가
                                     >
                                         <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24"
+                                            xmlns='http://www.w3.org/2000/svg'
+                                            viewBox='0 0 24 24'
                                         >
                                             <path
-                                                d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
-                                                fill="currentColor"
-                                            />
-                                        </svg>
-                                        Login with Apple
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="w-full"
-                                    >
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                                                fill="currentColor"
+                                                d='M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z'
+                                                fill='currentColor'
                                             />
                                         </svg>
                                         Login with Google
                                     </Button>
                                 </div>
-                                <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                                    <span className="bg-card text-muted-foreground relative z-10 px-2">
+                                <div className='after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t'>
+                                    <span className='bg-card text-muted-foreground relative z-10 px-2'>
                                         Or continue with
                                     </span>
                                 </div>
-                                <div className="grid gap-6">
-                                    <div className="grid gap-3">
-                                        {/* ************************ Label, inpu 을 대체 */}
+                                <div className='grid gap-6'>
+                                    <div className='grid gap-3'>
+                                        {/*  Label, inpu 을 대체 */}
                                         <FormField
                                             control={form.control}
-                                            name="email"
+                                            name='email'
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Email</FormLabel>
                                                     <FormControl>
                                                         <Input
-                                                            placeholder="m@example.com"
+                                                            placeholder='m@example.com'
                                                             {...field}
                                                         />
                                                     </FormControl>
@@ -119,12 +133,12 @@ export function LoginForm({
                                             )}
                                         />
                                     </div>
-                                    <div className="grid gap-3">
-                                        <div className="flex flex-col gap-2">
-                                            {/* ************************ Label, inpu 을 대체 */}
+                                    <div className='grid gap-3'>
+                                        <div className='flex flex-col gap-2'>
+                                            {/*  Label, inpu 을 대체 */}
                                             <FormField
                                                 control={form.control}
-                                                name="password"
+                                                name='password'
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>
@@ -132,9 +146,9 @@ export function LoginForm({
                                                         </FormLabel>
                                                         <FormControl>
                                                             <Input
-                                                                placeholder="********"
+                                                                placeholder='********'
                                                                 {...field}
-                                                                type="password"
+                                                                type='password'
                                                             />
                                                         </FormControl>
                                                         <FormMessage />
@@ -142,8 +156,8 @@ export function LoginForm({
                                                 )}
                                             />
                                             <a
-                                                href="#"
-                                                className="ml-auto text-sm underline-offset-4 hover:underline"
+                                                href='#'
+                                                className='ml-auto text-sm underline-offset-4 hover:underline'
                                             >
                                                 Forgot your password?
                                             </a>
@@ -151,17 +165,22 @@ export function LoginForm({
                                     </div>
                                     {/* --------------- 로그인 버튼 --------------- */}
                                     <Button
-                                        type="submit" // ***************** button 에서 submit 으로 수정
-                                        className="w-full"
+                                        type='submit' //  button 에서 submit 으로 수정
+                                        className='w-full'
                                     >
-                                        Login
+                                        {/*  로딩중이면... 로딩 아이콘을 애니메이션하고... 아니면 login 버튼 표시  */}
+                                        {isLoading ? (
+                                            <Loader2 className='size-4 animate-spin' />
+                                        ) : (
+                                            'Login'
+                                        )}
                                     </Button>
                                 </div>
-                                <div className="text-center text-sm">
+                                <div className='text-center text-sm'>
                                     Don&apos;t have an account?{' '}
                                     <a
-                                        href="#"
-                                        className="underline underline-offset-4"
+                                        href='#'
+                                        className='underline underline-offset-4'
                                     >
                                         Sign up
                                     </a>
@@ -171,10 +190,10 @@ export function LoginForm({
                     </Form>
                 </CardContent>
             </Card>
-            <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
+            <div className='text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4'>
                 By clicking continue, you agree to our{' '}
-                <a href="#">Terms of Service</a> and{' '}
-                <a href="#">Privacy Policy</a>.
+                <a href='#'>Terms of Service</a> and{' '}
+                <a href='#'>Privacy Policy</a>.
             </div>
         </div>
     );
