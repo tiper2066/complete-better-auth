@@ -1,5 +1,5 @@
 'use client';
-import { signIn, signUp } from '@/server/users'; //   서버 액션 signUp 제거하고 signIn으로 대체
+import { signUp } from '@/server/users'; // ********************************  서버 액션 signUp  대체
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,13 +27,16 @@ import { useState } from 'react'; //  useState 추가
 import { Loader2 } from 'lucide-react';
 import { authClient } from '@/lib/auth-client'; //  authClient 객체 가져옴
 import Link from 'next/link';
+
 //  form 유효성 검사 함수 선언
 const formSchema = z.object({
+    username: z.string().min(3), // *********************************** 이름 최소 3자 추가
     email: z.string().email(), // 이메일 유효성 검사
     password: z.string().min(8), // 비번 최소 8자
 });
 
-export function LoginForm({
+// *********************************** SignUpForm 으로 컴포넌트 이름변경
+export function SignUpForm({
     className,
     ...props
 }: React.ComponentProps<'div'>) {
@@ -44,6 +47,7 @@ export function LoginForm({
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
+            username: '',
             email: '',
             password: '',
         },
@@ -60,9 +64,10 @@ export function LoginForm({
     // 2.  Submit handler 선언 - toast 이용해서 수정
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true); //  loading 상태로 변경
-        const { success, message } = await signIn(
+        const { success, message } = await signUp(
             values.email,
-            values.password
+            values.password,
+            values.username
         );
         // 로그인에 성공하면 성공 메시지 출력하고
         if (success) {
@@ -79,7 +84,7 @@ export function LoginForm({
                 <CardHeader className="text-center">
                     <CardTitle className="text-xl">Welcome back</CardTitle>
                     <CardDescription>
-                        Login with your Google account
+                        Signup with your Google account
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -106,7 +111,7 @@ export function LoginForm({
                                                 fill="currentColor"
                                             />
                                         </svg>
-                                        Login with Google
+                                        Signup with Google
                                     </Button>
                                 </div>
                                 <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
@@ -115,8 +120,28 @@ export function LoginForm({
                                     </span>
                                 </div>
                                 <div className="grid gap-6">
+                                    {/* **************************** User Name 필드 추가 **************************** */}
                                     <div className="grid gap-3">
-                                        {/*  Label, inpu 을 대체 */}
+                                        <FormField
+                                            control={form.control}
+                                            name="username"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        Username
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="username"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                    <div className="grid gap-3">
                                         <FormField
                                             control={form.control}
                                             name="email"
@@ -164,7 +189,6 @@ export function LoginForm({
                                             </a>
                                         </div>
                                     </div>
-                                    {/* --------------- 로그인 버튼 --------------- */}
                                     <Button
                                         type="submit" //  button 에서 submit 으로 수정
                                         className="w-full"
@@ -173,17 +197,17 @@ export function LoginForm({
                                         {isLoading ? (
                                             <Loader2 className="size-4 animate-spin" />
                                         ) : (
-                                            'Login'
+                                            'Sign Up'
                                         )}
                                     </Button>
                                 </div>
                                 <div className="text-center text-sm">
                                     Don&apos;t have an account?{' '}
                                     <Link
-                                        href="signup"
+                                        href="/login"
                                         className="underline underline-offset-4"
                                     >
-                                        Sign up
+                                        Login
                                     </Link>
                                 </div>
                             </div>

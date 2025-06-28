@@ -26,14 +26,31 @@ export const signIn = async (email: string, password: string) => {
     }
 };
 
-export const signUp = async () => {
-    // 회원가입에 필요한 signUp 함수
-    await auth.api.signUpEmail({
-        // auth.api 에서 제공하는 signUpEmail 함수를 사용함
-        body: {
-            email: 'zozo@email.com', // 회원 가입 시 필요한 email, password, name 을  미리 설정해 둔다.
-            password: 'zozo12345',
-            name: 'zozo dev',
-        },
-    });
+export const signUp = async (
+    email: string,
+    password: string,
+    username: string
+) => {
+    try {
+        // 회원가입에 필요한 signUp 함수
+        await auth.api.signUpEmail({
+            // auth.api 에서 제공하는 signUpEmail 함수를 사용함
+            body: {
+                email: email, // 전달받은 email, password, username 을  동일한 속성값으로 할당
+                password: password,
+                name: username,
+            },
+        });
+
+        return {
+            success: true,
+            message: 'Signed up successfully',
+        };
+    } catch (error) {
+        const e = error as Error;
+        return {
+            success: false,
+            message: e.message || 'An unknown error occurred.',
+        };
+    }
 };
